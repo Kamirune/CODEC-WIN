@@ -1,0 +1,35 @@
+# ── 빌드 산출물 ──
+bin/
+obj/
+publish/
+codec_dist/
+*.user
+
+# publish 결과물 (단일 exe 등)
+*.exe
+*.dll
+*.pdb
+
+# ── .NET / MSBuild ──
+[Dd]ebug/
+[Rr]elease/
+[Bb]in/
+[Oo]bj/
+project.lock.json
+*.binlog
+
+# ── Visual Studio / VS Code ──
+.vs/
+.vscode/
+*.suo
+*.userprefs
+
+# ── OS ──
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ── 유지할 리소스 (제외 규칙에서 되살림) ──
+# 위에서 *.exe/*.dll 을 무시하지만, 소스 리소스인 아이콘/배경은 추적해야 함
+!codec.ico
+!bg.png

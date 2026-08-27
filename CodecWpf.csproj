@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <AssemblyName>codec</AssemblyName>
+    <RootNamespace>CodecWpf</RootNamespace>
+    <!-- exe 파일 자체에 박히는 아이콘 -->
+    <ApplicationIcon>codec.ico</ApplicationIcon>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- 아이콘·배경을 exe에 리소스로 내장 (단일 파일에서도 안전) -->
+    <Resource Include="codec.ico"/>
+    <Resource Include="bg.png"/>
+  </ItemGroup>
+
+</Project>
