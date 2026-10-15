@@ -90,39 +90,97 @@ namespace CodecWpf
         }
 
         // ── 디코딩 ──────────────────────────────────────
+        // 디코딩은 복사·붙여넣기 과정에서 섞이는 공백·탭·줄바꿈을 관대하게 처리한다.
+        //  - base64/base32/hex: 공백류를 전부 제거하고 디코딩.
+        //    실패하면 줄마다 따로 인코딩된 경우로 보고 한 줄씩 디코딩 (결과 줄바꿈 유지).
+        //  - binary/ascii/morse: 공백·탭·줄바꿈 어떤 조합이든 구분자로 취급.
         public static string Decode(string method, string text, int shift = 3)
         {
             switch (method)
             {
                 case "base64":
-                    return Encoding.UTF8.GetString(Convert.FromBase64String(text));
                 case "base32":
-                    return Encoding.UTF8.GetString(Base32Decode(text));
                 case "hex":
-                    return Encoding.UTF8.GetString(Convert.FromHexString(text.Replace(" ", "")));
+                    return DecodeCompact(method, text);
                 case "url":
-                    return Uri.UnescapeDataString(text);
+                    return Uri.UnescapeDataString(text.Trim());
                 case "binary":
-                    return Encoding.UTF8.GetString(
-                        text.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries)
-                            .Select(b => Convert.ToByte(b, 2)).ToArray());
+                    return Encoding.UTF8.GetString(ParseBinary(text));
                 case "ascii":
                     return Encoding.UTF8.GetString(
-                        text.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries)
-                            .Select(n => byte.Parse(n)).ToArray());
+                        SplitTokens(text).Select(n => byte.Parse(n)).ToArray());
                 case "rot13":
                     return CaesarShift(text, -13);
                 case "caesar":
                     return CaesarShift(text, -shift);
                 case "morse":
-                    return string.Concat(
-                        text.Split(' ').Select(code =>
-                            MorseRev.TryGetValue(code, out var ch) ? ch : '?'));
+                    return DecodeMorse(text);
                 case AutoMethod:
                     return AutoDecode(text, out _);
                 default:
                     throw new ArgumentException($"알 수 없는 방식: {method}");
             }
+        }
+
+        // ── 공백 처리 도우미 ────────────────────────────
+        private static string StripWhitespace(string s) =>
+            new string(s.Where(c => !char.IsWhiteSpace(c)).ToArray());
+
+        private static string[] SplitTokens(string s) =>
+            s.Split((char[])null, StringSplitOptions.RemoveEmptyEntries);   // null = 모든 공백류
+
+        private static byte[] DecodeCompactBytes(string method, string compact)
+        {
+            switch (method)
+            {
+                case "base64": return Convert.FromBase64String(compact);
+                case "base32": return Base32Decode(compact);
+                default:       return Convert.FromHexString(compact);   // hex
+            }
+        }
+
+        private static string DecodeCompact(string method, string text)
+        {
+            try
+            {
+                return Encoding.UTF8.GetString(DecodeCompactBytes(method, StripWhitespace(text)));
+            }
+            catch
+            {
+                // 여러 줄에 각각 따로 인코딩된 값이 있는 경우 (예: base64 두 줄, 각자 == 패딩)
+                var lines = text.Split(new[] { "\r\n", "\n", "\r" }, StringSplitOptions.None);
+                if (lines.Count(l => l.Trim().Length > 0) < 2) throw;
+                return string.Join(Environment.NewLine, lines.Select(l =>
+                    l.Trim().Length == 0 ? "" :
+                    Encoding.UTF8.GetString(DecodeCompactBytes(method, StripWhitespace(l)))));
+            }
+        }
+
+        // 공백으로 나뉜 8비트 묶음, 또는 공백 없이 붙은 비트열 둘 다 허용
+        private static byte[] ParseBinary(string text)
+        {
+            var tokens = SplitTokens(text);
+            if (tokens.Length == 1 && tokens[0].Length > 8)
+            {
+                string bits = tokens[0];
+                if (bits.Length % 8 != 0)
+                    throw new FormatException("비트 수가 8의 배수가 아닙니다");
+                tokens = Enumerable.Range(0, bits.Length / 8)
+                    .Select(i => bits.Substring(i * 8, 8)).ToArray();
+            }
+            return tokens.Select(b => Convert.ToByte(b, 2)).ToArray();
+        }
+
+        // 글자는 공백류로, 단어는 '/'로 구분. 줄바꿈도 단어 구분으로 본다.
+        private static string DecodeMorse(string text)
+        {
+            var words = text.Replace("\r\n", "/").Replace('\n', '/').Replace('\r', '/')
+                .Split('/', StringSplitOptions.RemoveEmptyEntries)
+                .Select(w => SplitTokens(w))
+                .Where(w => w.Length > 0)
+                .Select(w => string.Concat(w.Select(code =>
+                    MorseRev.TryGetValue(code, out var ch) ? ch : '?')));
+            return string.Join(" ", words);
         }
 
         // ── 자동 다중 디코딩 ────────────────────────────
@@ -165,12 +223,12 @@ namespace CodecWpf
         }
 
         private static readonly Regex UrlPattern = new Regex("%[0-9A-Fa-f]{2}");
-        private static readonly Regex BinaryPattern = new Regex(@"^[01]{8}( [01]{8})*$");
-        private static readonly Regex AsciiPattern = new Regex(@"^\d{1,3}( \d{1,3})+$");
+        private static readonly Regex BinaryPattern = new Regex(@"^[01]{8}(?:\s+[01]{8})+$|^(?:[01]{8}){2,}$");
+        private static readonly Regex AsciiPattern = new Regex(@"^\d{1,3}(?:\s+\d{1,3})+$");
         private static readonly Regex HexPattern = new Regex("^(?:[0-9A-Fa-f]{2})+$");
         private static readonly Regex Base32Pattern = new Regex("^[A-Z2-7]+=*$");
         private static readonly Regex Base64Pattern = new Regex("^[A-Za-z0-9+/]+={0,2}$");
-        private static readonly Regex MorsePattern = new Regex(@"^[.\-/ ]+$");
+        private static readonly Regex MorsePattern = new Regex(@"^[.\-/\s]+$");
 
         // 잘못된 UTF-8이면 예외를 던지는 디코더 (깨진 결과를 통과시키지 않기 위해)
         private static readonly UTF8Encoding StrictUtf8 = new UTF8Encoding(false, true);
@@ -188,27 +246,27 @@ namespace CodecWpf
                         break;
                     case "binary":
                         if (!BinaryPattern.IsMatch(text)) return false;
-                        result = StrictUtf8.GetString(text.Split(' ')
-                            .Select(b => Convert.ToByte(b, 2)).ToArray());
+                        result = StrictUtf8.GetString(ParseBinary(text));
                         break;
                     case "ascii":
                         if (!AsciiPattern.IsMatch(text)) return false;
-                        var nums = text.Split(' ').Select(int.Parse).ToArray();
+                        var nums = SplitTokens(text).Select(int.Parse).ToArray();
                         if (nums.Any(n => n > 255)) return false;
                         result = StrictUtf8.GetString(nums.Select(n => (byte)n).ToArray());
                         break;
                     case "hex":
-                        string hex = text.Replace(" ", "");
+                        string hex = StripWhitespace(text);
                         if (hex.Length < 4 || !HexPattern.IsMatch(hex)) return false;
                         result = StrictUtf8.GetString(Convert.FromHexString(hex));
                         break;
                     case "base32":
-                        if (text.Length < 8 || text.Length % 8 != 0 || !Base32Pattern.IsMatch(text))
+                        string b32 = StripWhitespace(text);
+                        if (b32.Length < 8 || b32.Length % 8 != 0 || !Base32Pattern.IsMatch(b32))
                             return false;
-                        result = StrictUtf8.GetString(Base32Decode(text));
+                        result = StrictUtf8.GetString(Base32Decode(b32));
                         break;
                     case "base64":
-                        string b64 = Regex.Replace(text, @"\s", "");
+                        string b64 = StripWhitespace(text);
                         if (b64.Length < 4 || b64.Length % 4 != 0 || !Base64Pattern.IsMatch(b64))
                             return false;
                         result = StrictUtf8.GetString(Convert.FromBase64String(b64));
@@ -238,7 +296,7 @@ namespace CodecWpf
             foreach (char c in s)
             {
                 if (c == '\r' || c == '\n' || c == '\t') continue;
-                if (char.IsControl(c) || c == '�') return false;
+                if (char.IsControl(c) || c == '\uFFFD') return false;
             }
             return true;
         }
