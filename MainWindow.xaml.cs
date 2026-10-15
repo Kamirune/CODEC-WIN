@@ -24,7 +24,7 @@ namespace CodecWpf
 
             foreach (var m in Codec.Methods)
                 MethodBox.Items.Add(m);
-            MethodBox.SelectedIndex = 0;   // base64
+            MethodBox.SelectedIndex = 0;   // auto (선택되면 자동으로 DECODE 모드)
 
             foreach (var f in Codec.HexFormats)
                 HexFormatBox.Items.Add(f);

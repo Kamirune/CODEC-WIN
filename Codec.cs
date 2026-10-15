@@ -22,15 +22,15 @@ namespace CodecWpf
 
         public static bool IsHash(string method) => HashMethods.Contains(method);
 
-        // 지원하는 방식 목록 (드롭다운에 그대로 사용)
+        // 지원하는 방식 목록 (드롭다운에 그대로 사용): auto가 맨 위(기본값), 나머지는 abc 순
         public static readonly string[] Methods =
-        {
-            "base64", "base32", "hex", "url",
-            "binary", "ascii", "rot13", "caesar", "morse",
-            "html",
-            AutoMethod,
-            "md5", "sha1", "sha256", "sha512"
-        };
+            new[] { AutoMethod }.Concat(new[]
+            {
+                "base64", "base32", "hex", "url",
+                "binary", "ascii", "rot13", "caesar", "morse",
+                "html",
+                "md5", "sha1", "sha256", "sha512"
+            }.OrderBy(m => m, StringComparer.Ordinal)).ToArray();
 
         // ── 문자셋 ──────────────────────────────────────
         // 바이트 기반 방식(base64/hex/url/binary/ascii/해시 등)에서 텍스트↔바이트 변환에 쓸 문자셋.
