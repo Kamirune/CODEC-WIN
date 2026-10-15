@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using System.Windows;
+using System.Windows.Input;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
@@ -27,6 +29,10 @@ namespace CodecWpf
         private bool IsEncode => EncodeMode.IsChecked == true;
         private string CurrentMethod => MethodBox.SelectedItem as string ?? "base64";
 
+        // AGAIN으로 몇 번째 변환인지 (사용자가 직접 입력하면 0으로 리셋)
+        private int _chainDepth;
+        private bool _chaining;
+
         private int GetShift()
         {
             return int.TryParse(ShiftBox.Text.Trim(), out int s) ? s : 3;
@@ -40,11 +46,22 @@ namespace CodecWpf
             ShiftPanel.Visibility = CurrentMethod == "caesar"
                 ? Visibility.Visible : Visibility.Collapsed;
 
+            // auto는 디코딩 전용이므로 선택하면 DECODE로 전환 (Checked 이벤트가 Convert 호출)
+            if (CurrentMethod == Codec.AutoMethod && IsEncode)
+            {
+                DecodeMode.IsChecked = true;
+                return;
+            }
+
             Convert();
         }
 
         private void Mode_Changed(object sender, RoutedEventArgs e) => Convert();
-        private void Input_Changed(object sender, EventArgs e) => Convert();
+        private void Input_Changed(object sender, EventArgs e)
+        {
+            if (!_chaining && sender == InputBox) _chainDepth = 0;   // 직접 입력 → 체인 리셋
+            Convert();
+        }
 
         // 실시간 변환 핵심
         private void Convert()
@@ -74,14 +91,28 @@ namespace CodecWpf
 
             try
             {
-                string result = IsEncode
-                    ? Codec.Encode(CurrentMethod, input, GetShift())
-                    : Codec.Decode(CurrentMethod, input, GetShift());
+                string result;
+                string detail = "";
+
+                if (!IsEncode && CurrentMethod == Codec.AutoMethod)
+                {
+                    // 자동 다중 디코딩: 거친 단계를 상태바에 표시
+                    result = Codec.AutoDecode(input, out List<string> steps);
+                    detail = $" · {string.Join(" → ", steps)} ({steps.Count} layer{(steps.Count > 1 ? "s" : "")})";
+                }
+                else
+                {
+                    result = IsEncode
+                        ? Codec.Encode(CurrentMethod, input, GetShift())
+                        : Codec.Decode(CurrentMethod, input, GetShift());
+                }
+
+                if (_chainDepth > 0) detail += $" · chain #{_chainDepth + 1}";
 
                 bool changed = OutputBox.Text != result;
                 OutputBox.Foreground = CyanBrush;
                 OutputBox.Text = result;
-                SetStatus($"{(IsEncode ? "encoded" : "decoded")} · {result.Length} chars", false);
+                SetStatus($"{(IsEncode ? "encoded" : "decoded")}{detail} · {result.Length} chars", false);
                 UpdateButtons(!string.IsNullOrEmpty(result));
 
                 if (changed && !string.IsNullOrEmpty(result))
@@ -120,6 +151,7 @@ namespace CodecWpf
         private void UpdateButtons(bool hasValidOutput)
         {
             if (CopyBtn != null) CopyBtn.IsEnabled = hasValidOutput;
+            if (AgainBtn != null) AgainBtn.IsEnabled = hasValidOutput;
             if (SwapBtn != null) SwapBtn.IsEnabled = hasValidOutput;
         }
 
@@ -140,6 +172,33 @@ namespace CodecWpf
             }
         }
 
+        // 출력 → 입력으로 보내고 모드는 그대로 유지한다. (연속 디코딩/인코딩)
+        // 예: base64를 두 번 감싼 문자열 → AGAIN 한 번 더 누르면 원문.
+        //     중간에 방식을 바꿔 url → base64 같은 조합도 한 겹씩 벗길 수 있다.
+        private void Again_Click(object sender, RoutedEventArgs e)
+        {
+            string output = OutputBox.Text;
+            if (string.IsNullOrEmpty(output) || output.StartsWith("✗"))
+                return;
+
+            _chainDepth++;
+            _chaining = true;
+            InputBox.Text = output;                 // TextChanged → Convert 자동 실행
+            _chaining = false;
+            InputBox.CaretIndex = InputBox.Text.Length;
+            InputBox.Focus();
+        }
+
+        // Ctrl+Enter = AGAIN
+        private void Window_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Enter && Keyboard.Modifiers == ModifierKeys.Control)
+            {
+                if (AgainBtn.IsEnabled) Again_Click(AgainBtn, new RoutedEventArgs());
+                e.Handled = true;
+            }
+        }
+
         // 출력 → 입력으로 보내고 인코딩/디코딩 모드를 뒤집는다.
         // (예: base64 인코딩 결과를 그대로 디코딩 입력으로 확인)
         private void Swap_Click(object sender, RoutedEventArgs e)
@@ -148,10 +207,18 @@ namespace CodecWpf
             if (string.IsNullOrEmpty(output) || output.StartsWith("✗"))
                 return;
 
+            // auto는 디코딩 전용이라 뒤집을 인코딩 모드가 없다
+            if (CurrentMethod == Codec.AutoMethod)
+            {
+                SetStatus("auto는 디코딩 전용이라 스왑할 수 없어요. 방식을 먼저 고르세요", true);
+                return;
+            }
+
             // 모드 뒤집기 (Checked 이벤트가 Convert를 부르므로 입력은 그 뒤에 넣는다)
             if (IsEncode) DecodeMode.IsChecked = true;
             else EncodeMode.IsChecked = true;
 
+            _chainDepth = 0;
             InputBox.Text = output;                 // TextChanged → Convert 자동 실행
             InputBox.CaretIndex = InputBox.Text.Length;
             InputBox.Focus();

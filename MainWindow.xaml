@@ -5,7 +5,8 @@
         MinHeight="560" MinWidth="600"
         WindowStartupLocation="CenterScreen"
         Icon="pack://application:,,,/codec.ico"
-        Background="#08070F" FontFamily="Segoe UI">
+        Background="#08070F" FontFamily="Segoe UI"
+        PreviewKeyDown="Window_PreviewKeyDown">
 
     <Window.Resources>
         <!-- ── 네온 색상 ── -->
@@ -190,6 +191,84 @@
                 </Setter.Value>
             </Setter>
         </Style>
+        <!-- ── 네온 버튼 (COPY / AGAIN 공용) ── -->
+        <Style x:Key="NeonBtn" TargetType="Button">
+            <Setter Property="Foreground" Value="#E9E7FA"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Height" Value="32"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="cb" Background="{StaticResource BtnFill}"
+                                CornerRadius="8" BorderBrush="{StaticResource PanelStroke}"
+                                BorderThickness="1">
+                            <Border.RenderTransform>
+                                <ScaleTransform x:Name="cbScale" ScaleX="1" ScaleY="1"/>
+                            </Border.RenderTransform>
+                            <Grid>
+                                <Border CornerRadius="8,8,0,0" Height="1"
+                                        VerticalAlignment="Top" Background="#26FFFFFF"/>
+                                <ContentPresenter HorizontalAlignment="Center"
+                                                  VerticalAlignment="Center"/>
+                            </Grid>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <!-- 호버 시 부드럽게 마젠타 테두리로 전환 -->
+                            <EventTrigger RoutedEvent="MouseEnter">
+                                <BeginStoryboard>
+                                    <Storyboard>
+                                        <ColorAnimation
+                                            Storyboard.TargetName="cb"
+                                            Storyboard.TargetProperty="BorderBrush.(SolidColorBrush.Color)"
+                                            To="#F03CB4" Duration="0:0:0.2"/>
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </EventTrigger>
+                            <EventTrigger RoutedEvent="MouseLeave">
+                                <BeginStoryboard>
+                                    <Storyboard>
+                                        <ColorAnimation
+                                            Storyboard.TargetName="cb"
+                                            Storyboard.TargetProperty="BorderBrush.(SolidColorBrush.Color)"
+                                            To="#2A2540" Duration="0:0:0.3"/>
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </EventTrigger>
+                            <!-- 누를 때 살짝 눌리는 느낌 -->
+                            <EventTrigger RoutedEvent="PreviewMouseLeftButtonDown">
+                                <BeginStoryboard>
+                                    <Storyboard>
+                                        <DoubleAnimation Storyboard.TargetName="cbScale"
+                                            Storyboard.TargetProperty="ScaleX"
+                                            To="0.94" Duration="0:0:0.08"/>
+                                        <DoubleAnimation Storyboard.TargetName="cbScale"
+                                            Storyboard.TargetProperty="ScaleY"
+                                            To="0.94" Duration="0:0:0.08"/>
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </EventTrigger>
+                            <EventTrigger RoutedEvent="PreviewMouseLeftButtonUp">
+                                <BeginStoryboard>
+                                    <Storyboard>
+                                        <DoubleAnimation Storyboard.TargetName="cbScale"
+                                            Storyboard.TargetProperty="ScaleX"
+                                            To="1" Duration="0:0:0.12"/>
+                                        <DoubleAnimation Storyboard.TargetName="cbScale"
+                                            Storyboard.TargetProperty="ScaleY"
+                                            To="1" Duration="0:0:0.12"/>
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </EventTrigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Opacity" Value="0.35"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
     </Window.Resources>
 
     <!-- 배경 이미지 위에 UI -->
@@ -323,79 +402,15 @@
                         </StackPanel>
                     </Button>
 
-                    <Button x:Name="CopyBtn" Content="COPY" Width="74" Height="32"
-                            HorizontalAlignment="Right" Cursor="Hand"
-                            Click="Copy_Click" Foreground="{StaticResource TextMain}"
-                            FontWeight="SemiBold" BorderThickness="0">
-                        <Button.Template>
-                            <ControlTemplate TargetType="Button">
-                                <Border x:Name="cb" Background="{StaticResource BtnFill}"
-                                        CornerRadius="8" BorderBrush="{StaticResource PanelStroke}"
-                                        BorderThickness="1">
-                                    <Border.RenderTransform>
-                                        <ScaleTransform x:Name="cbScale" ScaleX="1" ScaleY="1"/>
-                                    </Border.RenderTransform>
-                                    <Grid>
-                                        <Border CornerRadius="8,8,0,0" Height="1"
-                                                VerticalAlignment="Top" Background="#26FFFFFF"/>
-                                        <ContentPresenter HorizontalAlignment="Center"
-                                                          VerticalAlignment="Center"/>
-                                    </Grid>
-                                </Border>
-                                <ControlTemplate.Triggers>
-                                    <!-- 호버 시 부드럽게 마젠타 테두리로 전환 -->
-                                    <EventTrigger RoutedEvent="MouseEnter">
-                                        <BeginStoryboard>
-                                            <Storyboard>
-                                                <ColorAnimation
-                                                    Storyboard.TargetName="cb"
-                                                    Storyboard.TargetProperty="BorderBrush.(SolidColorBrush.Color)"
-                                                    To="#F03CB4" Duration="0:0:0.2"/>
-                                            </Storyboard>
-                                        </BeginStoryboard>
-                                    </EventTrigger>
-                                    <EventTrigger RoutedEvent="MouseLeave">
-                                        <BeginStoryboard>
-                                            <Storyboard>
-                                                <ColorAnimation
-                                                    Storyboard.TargetName="cb"
-                                                    Storyboard.TargetProperty="BorderBrush.(SolidColorBrush.Color)"
-                                                    To="#2A2540" Duration="0:0:0.3"/>
-                                            </Storyboard>
-                                        </BeginStoryboard>
-                                    </EventTrigger>
-                                    <!-- 누를 때 살짝 눌리는 느낌 -->
-                                    <EventTrigger RoutedEvent="PreviewMouseLeftButtonDown">
-                                        <BeginStoryboard>
-                                            <Storyboard>
-                                                <DoubleAnimation Storyboard.TargetName="cbScale"
-                                                    Storyboard.TargetProperty="ScaleX"
-                                                    To="0.94" Duration="0:0:0.08"/>
-                                                <DoubleAnimation Storyboard.TargetName="cbScale"
-                                                    Storyboard.TargetProperty="ScaleY"
-                                                    To="0.94" Duration="0:0:0.08"/>
-                                            </Storyboard>
-                                        </BeginStoryboard>
-                                    </EventTrigger>
-                                    <EventTrigger RoutedEvent="PreviewMouseLeftButtonUp">
-                                        <BeginStoryboard>
-                                            <Storyboard>
-                                                <DoubleAnimation Storyboard.TargetName="cbScale"
-                                                    Storyboard.TargetProperty="ScaleX"
-                                                    To="1" Duration="0:0:0.12"/>
-                                                <DoubleAnimation Storyboard.TargetName="cbScale"
-                                                    Storyboard.TargetProperty="ScaleY"
-                                                    To="1" Duration="0:0:0.12"/>
-                                            </Storyboard>
-                                        </BeginStoryboard>
-                                    </EventTrigger>
-                                    <Trigger Property="IsEnabled" Value="False">
-                                        <Setter Property="Opacity" Value="0.35"/>
-                                    </Trigger>
-                                </ControlTemplate.Triggers>
-                            </ControlTemplate>
-                        </Button.Template>
-                    </Button>
+                    <!-- 결과를 입력으로 보내고 같은 모드로 한 번 더 변환 (연속 디코딩) -->
+                    <Button x:Name="AgainBtn" Content="AGAIN ↻" Width="86"
+                            HorizontalAlignment="Left" Style="{StaticResource NeonBtn}"
+                            Click="Again_Click"
+                            ToolTip="결과를 입력으로 보내 같은 모드로 한 번 더 변환합니다 (Ctrl+Enter)"/>
+
+                    <Button x:Name="CopyBtn" Content="COPY" Width="74"
+                            HorizontalAlignment="Right" Style="{StaticResource NeonBtn}"
+                            Click="Copy_Click"/>
                 </Grid>
 
                 <!-- ── 출력 패널 ── -->

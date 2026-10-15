@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace CodecWpf
 {
@@ -10,11 +11,15 @@ namespace CodecWpf
     /// </summary>
     public static class Codec
     {
+        // 자동 다중 디코딩 방식 이름 (디코딩 전용)
+        public const string AutoMethod = "auto";
+
         // 지원하는 방식 목록 (드롭다운에 그대로 사용)
         public static readonly string[] Methods =
         {
             "base64", "base32", "hex", "url",
-            "binary", "ascii", "rot13", "caesar", "morse"
+            "binary", "ascii", "rot13", "caesar", "morse",
+            AutoMethod
         };
 
         // ── 모스 부호 테이블 ─────────────────────────────
@@ -77,6 +82,8 @@ namespace CodecWpf
                 case "morse":
                     return string.Join(" ", text.Select(ch =>
                         Morse.TryGetValue(char.ToUpper(ch), out var code) ? code : "?"));
+                case AutoMethod:
+                    throw new ArgumentException("auto는 디코딩 전용입니다. DECODE 모드로 바꾸세요");
                 default:
                     throw new ArgumentException($"알 수 없는 방식: {method}");
             }
@@ -111,9 +118,129 @@ namespace CodecWpf
                     return string.Concat(
                         text.Split(' ').Select(code =>
                             MorseRev.TryGetValue(code, out var ch) ? ch : '?'));
+                case AutoMethod:
+                    return AutoDecode(text, out _);
                 default:
                     throw new ArgumentException($"알 수 없는 방식: {method}");
             }
+        }
+
+        // ── 자동 다중 디코딩 ────────────────────────────
+        // 결과가 또 인코딩된 형태로 보이면 계속 벗겨낸다.
+        // 판별은 "형식이 맞는가" + "디코딩 결과가 정상 텍스트인가" 두 단계로 해서
+        // 평범한 단어(예: "test")를 base64로 오인하는 걸 막는다.
+        // rot13/caesar는 결과만 봐서는 판별이 불가능해서 제외.
+        private static readonly string[] AutoOrder =
+        {
+            "url", "binary", "ascii", "hex", "base32", "base64", "morse"
+        };
+
+        public const int MaxAutoLayers = 10;
+
+        public static string AutoDecode(string text, out List<string> steps)
+        {
+            steps = new List<string>();
+            string current = text.Trim();
+
+            for (int layer = 0; layer < MaxAutoLayers; layer++)
+            {
+                string next = null, used = null;
+                foreach (var m in AutoOrder)
+                {
+                    if (TryDecodeLayer(m, current, out var result))
+                    {
+                        next = result;
+                        used = m;
+                        break;
+                    }
+                }
+                if (next == null) break;   // 더 벗길 게 없음
+                steps.Add(used);
+                current = next.Trim();
+            }
+
+            if (steps.Count == 0)
+                throw new FormatException("인식할 수 있는 인코딩이 없습니다");
+            return current;
+        }
+
+        private static readonly Regex UrlPattern = new Regex("%[0-9A-Fa-f]{2}");
+        private static readonly Regex BinaryPattern = new Regex(@"^[01]{8}( [01]{8})*$");
+        private static readonly Regex AsciiPattern = new Regex(@"^\d{1,3}( \d{1,3})+$");
+        private static readonly Regex HexPattern = new Regex("^(?:[0-9A-Fa-f]{2})+$");
+        private static readonly Regex Base32Pattern = new Regex("^[A-Z2-7]+=*$");
+        private static readonly Regex Base64Pattern = new Regex("^[A-Za-z0-9+/]+={0,2}$");
+        private static readonly Regex MorsePattern = new Regex(@"^[.\-/ ]+$");
+
+        // 잘못된 UTF-8이면 예외를 던지는 디코더 (깨진 결과를 통과시키지 않기 위해)
+        private static readonly UTF8Encoding StrictUtf8 = new UTF8Encoding(false, true);
+
+        private static bool TryDecodeLayer(string method, string text, out string result)
+        {
+            result = null;
+            try
+            {
+                switch (method)
+                {
+                    case "url":
+                        if (!UrlPattern.IsMatch(text)) return false;
+                        result = Uri.UnescapeDataString(text);
+                        break;
+                    case "binary":
+                        if (!BinaryPattern.IsMatch(text)) return false;
+                        result = StrictUtf8.GetString(text.Split(' ')
+                            .Select(b => Convert.ToByte(b, 2)).ToArray());
+                        break;
+                    case "ascii":
+                        if (!AsciiPattern.IsMatch(text)) return false;
+                        var nums = text.Split(' ').Select(int.Parse).ToArray();
+                        if (nums.Any(n => n > 255)) return false;
+                        result = StrictUtf8.GetString(nums.Select(n => (byte)n).ToArray());
+                        break;
+                    case "hex":
+                        string hex = text.Replace(" ", "");
+                        if (hex.Length < 4 || !HexPattern.IsMatch(hex)) return false;
+                        result = StrictUtf8.GetString(Convert.FromHexString(hex));
+                        break;
+                    case "base32":
+                        if (text.Length < 8 || text.Length % 8 != 0 || !Base32Pattern.IsMatch(text))
+                            return false;
+                        result = StrictUtf8.GetString(Base32Decode(text));
+                        break;
+                    case "base64":
+                        string b64 = Regex.Replace(text, @"\s", "");
+                        if (b64.Length < 4 || b64.Length % 4 != 0 || !Base64Pattern.IsMatch(b64))
+                            return false;
+                        result = StrictUtf8.GetString(Convert.FromBase64String(b64));
+                        break;
+                    case "morse":
+                        if (!MorsePattern.IsMatch(text) || !text.Any(c => c == '.' || c == '-'))
+                            return false;
+                        result = Decode("morse", text);
+                        if (result.Contains('?')) return false;
+                        break;
+                    default:
+                        return false;
+                }
+            }
+            catch
+            {
+                return false;   // 형식은 맞아 보였지만 실제로는 디코딩 불가
+            }
+
+            return IsReadableText(result) && result != text;
+        }
+
+        // 제어문자(줄바꿈·탭 제외)가 섞였으면 "정상 텍스트가 아님"으로 본다.
+        private static bool IsReadableText(string s)
+        {
+            if (string.IsNullOrEmpty(s)) return false;
+            foreach (char c in s)
+            {
+                if (c == '\r' || c == '\n' || c == '\t') continue;
+                if (char.IsControl(c) || c == '�') return false;
+            }
+            return true;
         }
 
         // ── Base32 (.NET에 기본 API가 없어 직접 구현) ────
