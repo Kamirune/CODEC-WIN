@@ -8,268 +8,7 @@
         Background="#08070F" FontFamily="Segoe UI"
         PreviewKeyDown="Window_PreviewKeyDown">
 
-    <Window.Resources>
-        <!-- ── 네온 색상 ── -->
-        <Color x:Key="CyanColor">#22E9E9</Color>
-        <Color x:Key="MagentaColor">#F03CB4</Color>
-        <Color x:Key="IndigoColor">#7A5CFF</Color>
-        <SolidColorBrush x:Key="Cyan" Color="#22E9E9"/>
-        <SolidColorBrush x:Key="Magenta" Color="#F03CB4"/>
-        <SolidColorBrush x:Key="Indigo" Color="#7A5CFF"/>
-        <SolidColorBrush x:Key="TextDim" Color="#8A86B8"/>
-        <SolidColorBrush x:Key="TextMain" Color="#E9E7FA"/>
-
-        <!-- ── 패널 입체 배경: 위 밝고 아래 어둡게 (오목한 느낌) ── -->
-        <LinearGradientBrush x:Key="PanelFill" StartPoint="0,0" EndPoint="0,1">
-            <GradientStop Color="#161328" Offset="0"/>
-            <GradientStop Color="#0F0C1E" Offset="1"/>
-        </LinearGradientBrush>
-
-        <!-- 패널 테두리: 위쪽 하이라이트 → 아래 어둡게 -->
-        <LinearGradientBrush x:Key="PanelStroke" StartPoint="0,0" EndPoint="0,1">
-            <GradientStop Color="#3A3560" Offset="0"/>
-            <GradientStop Color="#211D3A" Offset="1"/>
-        </LinearGradientBrush>
-
-        <!-- 토글 선택 시 볼록한 입체 배경 -->
-        <LinearGradientBrush x:Key="ToggleOnFill" StartPoint="0,0" EndPoint="0,1">
-            <GradientStop Color="#1C3A4A" Offset="0"/>
-            <GradientStop Color="#112630" Offset="1"/>
-        </LinearGradientBrush>
-
-        <!-- 버튼 볼록 입체 -->
-        <LinearGradientBrush x:Key="BtnFill" StartPoint="0,0" EndPoint="0,1">
-            <GradientStop Color="#2A2547" Offset="0"/>
-            <GradientStop Color="#1A1630" Offset="1"/>
-        </LinearGradientBrush>
-
-        <!-- 공용 은은한 글로우 -->
-        <DropShadowEffect x:Key="CyanGlow" Color="#22E9E9" BlurRadius="14"
-                          ShadowDepth="0" Opacity="0.55"/>
-
-        <!-- ── 모드 토글 (ENCODE/DECODE) ── -->
-        <Style x:Key="ModeToggle" TargetType="RadioButton">
-            <Setter Property="Foreground" Value="#8A86B8"/>
-            <Setter Property="FontWeight" Value="Bold"/>
-            <Setter Property="FontSize" Value="13"/>
-            <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="RadioButton">
-                        <Grid>
-                            <!-- 글로우 레이어 (선택 시만 보임) -->
-                            <Border x:Name="glow" CornerRadius="8" Background="#22E9E9"
-                                    Opacity="0">
-                                <Border.Effect>
-                                    <BlurEffect Radius="16"/>
-                                </Border.Effect>
-                            </Border>
-                            <Border x:Name="bd" CornerRadius="8" Padding="22,10"
-                                    Background="Transparent"
-                                    BorderBrush="#2A2540" BorderThickness="1">
-                                <!-- 위쪽 안쪽 하이라이트 라인 -->
-                                <Grid>
-                                    <Border x:Name="hl" CornerRadius="8,8,0,0"
-                                            Height="1" VerticalAlignment="Top"
-                                            Background="#33FFFFFF" Opacity="0"/>
-                                    <ContentPresenter HorizontalAlignment="Center"
-                                                      VerticalAlignment="Center"/>
-                                </Grid>
-                            </Border>
-                        </Grid>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsChecked" Value="True">
-                                <Setter TargetName="bd" Property="Background"
-                                        Value="{StaticResource ToggleOnFill}"/>
-                                <Setter TargetName="bd" Property="BorderBrush" Value="#22E9E9"/>
-                                <Setter TargetName="hl" Property="Opacity" Value="1"/>
-                                <Setter Property="Foreground" Value="#5EF6F6"/>
-                                <!-- 글로우 부드럽게 켜기/끄기 -->
-                                <Trigger.EnterActions>
-                                    <BeginStoryboard>
-                                        <Storyboard>
-                                            <DoubleAnimation Storyboard.TargetName="glow"
-                                                Storyboard.TargetProperty="Opacity"
-                                                To="0.28" Duration="0:0:0.25"/>
-                                        </Storyboard>
-                                    </BeginStoryboard>
-                                </Trigger.EnterActions>
-                                <Trigger.ExitActions>
-                                    <BeginStoryboard>
-                                        <Storyboard>
-                                            <DoubleAnimation Storyboard.TargetName="glow"
-                                                Storyboard.TargetProperty="Opacity"
-                                                To="0" Duration="0:0:0.25"/>
-                                        </Storyboard>
-                                    </BeginStoryboard>
-                                </Trigger.ExitActions>
-                            </Trigger>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="bd" Property="BorderBrush" Value="#4A4470"/>
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-
-        <!-- ── 어두운 ComboBox (드롭다운 글자 안 보이던 문제 해결) ── -->
-        <ControlTemplate x:Key="ComboToggle" TargetType="ToggleButton">
-            <Border x:Name="bd" CornerRadius="7" Background="{StaticResource BtnFill}"
-                    BorderBrush="{StaticResource PanelStroke}" BorderThickness="1">
-                <Grid>
-                    <Border CornerRadius="7,7,0,0" Height="1" VerticalAlignment="Top"
-                            Background="#22FFFFFF"/>
-                    <Path x:Name="arrow" HorizontalAlignment="Right" VerticalAlignment="Center"
-                          Margin="0,0,12,0" Fill="#22E9E9"
-                          Data="M 0 0 L 4 4 L 8 0 Z"/>
-                </Grid>
-            </Border>
-            <ControlTemplate.Triggers>
-                <Trigger Property="IsMouseOver" Value="True">
-                    <Setter TargetName="bd" Property="BorderBrush" Value="#22E9E9"/>
-                </Trigger>
-            </ControlTemplate.Triggers>
-        </ControlTemplate>
-
-        <Style TargetType="ComboBox">
-            <Setter Property="Foreground" Value="#E9E7FA"/>
-            <Setter Property="FontSize" Value="14"/>
-            <Setter Property="FontFamily" Value="Consolas"/>
-            <Setter Property="Height" Value="36"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="ComboBox">
-                        <Grid>
-                            <ToggleButton Template="{StaticResource ComboToggle}"
-                                          IsChecked="{Binding IsDropDownOpen, Mode=TwoWay,
-                                                      RelativeSource={RelativeSource TemplatedParent}}"/>
-                            <ContentPresenter Content="{TemplateBinding SelectionBoxItem}"
-                                              Margin="14,0,30,0"
-                                              VerticalAlignment="Center"
-                                              HorizontalAlignment="Left"/>
-                            <Popup IsOpen="{TemplateBinding IsDropDownOpen}"
-                                   Placement="Bottom" AllowsTransparency="True"
-                                   Focusable="False" PopupAnimation="Slide">
-                                <Border Background="#141127" CornerRadius="7"
-                                        BorderBrush="#3A3560" BorderThickness="1"
-                                        Margin="0,4,0,0" MinWidth="{Binding ActualWidth,
-                                        RelativeSource={RelativeSource TemplatedParent}}">
-                                    <Border.Effect>
-                                        <DropShadowEffect Color="#000000" BlurRadius="16"
-                                                          ShadowDepth="3" Opacity="0.6"/>
-                                    </Border.Effect>
-                                    <StackPanel IsItemsHost="True" Margin="4"/>
-                                </Border>
-                            </Popup>
-                        </Grid>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-
-        <!-- ComboBox 항목 스타일 -->
-        <Style TargetType="ComboBoxItem">
-            <Setter Property="Foreground" Value="#C9C6E8"/>
-            <Setter Property="FontFamily" Value="Consolas"/>
-            <Setter Property="FontSize" Value="13"/>
-            <Setter Property="Padding" Value="10,7"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="ComboBoxItem">
-                        <Border x:Name="ib" CornerRadius="5" Padding="{TemplateBinding Padding}"
-                                Background="Transparent">
-                            <ContentPresenter/>
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsHighlighted" Value="True">
-                                <Setter TargetName="ib" Property="Background" Value="#1E2A44"/>
-                                <Setter Property="Foreground" Value="#22E9E9"/>
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-        <!-- ── 네온 버튼 (COPY / AGAIN 공용) ── -->
-        <Style x:Key="NeonBtn" TargetType="Button">
-            <Setter Property="Foreground" Value="#E9E7FA"/>
-            <Setter Property="FontWeight" Value="SemiBold"/>
-            <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="Height" Value="32"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="Button">
-                        <Border x:Name="cb" Background="{StaticResource BtnFill}"
-                                CornerRadius="8" BorderBrush="{StaticResource PanelStroke}"
-                                BorderThickness="1">
-                            <Border.RenderTransform>
-                                <ScaleTransform x:Name="cbScale" ScaleX="1" ScaleY="1"/>
-                            </Border.RenderTransform>
-                            <Grid>
-                                <Border CornerRadius="8,8,0,0" Height="1"
-                                        VerticalAlignment="Top" Background="#26FFFFFF"/>
-                                <ContentPresenter HorizontalAlignment="Center"
-                                                  VerticalAlignment="Center"/>
-                            </Grid>
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <!-- 호버 시 부드럽게 마젠타 테두리로 전환 -->
-                            <EventTrigger RoutedEvent="MouseEnter">
-                                <BeginStoryboard>
-                                    <Storyboard>
-                                        <ColorAnimation
-                                            Storyboard.TargetName="cb"
-                                            Storyboard.TargetProperty="BorderBrush.(SolidColorBrush.Color)"
-                                            To="#F03CB4" Duration="0:0:0.2"/>
-                                    </Storyboard>
-                                </BeginStoryboard>
-                            </EventTrigger>
-                            <EventTrigger RoutedEvent="MouseLeave">
-                                <BeginStoryboard>
-                                    <Storyboard>
-                                        <ColorAnimation
-                                            Storyboard.TargetName="cb"
-                                            Storyboard.TargetProperty="BorderBrush.(SolidColorBrush.Color)"
-                                            To="#2A2540" Duration="0:0:0.3"/>
-                                    </Storyboard>
-                                </BeginStoryboard>
-                            </EventTrigger>
-                            <!-- 누를 때 살짝 눌리는 느낌 -->
-                            <EventTrigger RoutedEvent="PreviewMouseLeftButtonDown">
-                                <BeginStoryboard>
-                                    <Storyboard>
-                                        <DoubleAnimation Storyboard.TargetName="cbScale"
-                                            Storyboard.TargetProperty="ScaleX"
-                                            To="0.94" Duration="0:0:0.08"/>
-                                        <DoubleAnimation Storyboard.TargetName="cbScale"
-                                            Storyboard.TargetProperty="ScaleY"
-                                            To="0.94" Duration="0:0:0.08"/>
-                                    </Storyboard>
-                                </BeginStoryboard>
-                            </EventTrigger>
-                            <EventTrigger RoutedEvent="PreviewMouseLeftButtonUp">
-                                <BeginStoryboard>
-                                    <Storyboard>
-                                        <DoubleAnimation Storyboard.TargetName="cbScale"
-                                            Storyboard.TargetProperty="ScaleX"
-                                            To="1" Duration="0:0:0.12"/>
-                                        <DoubleAnimation Storyboard.TargetName="cbScale"
-                                            Storyboard.TargetProperty="ScaleY"
-                                            To="1" Duration="0:0:0.12"/>
-                                    </Storyboard>
-                                </BeginStoryboard>
-                            </EventTrigger>
-                            <Trigger Property="IsEnabled" Value="False">
-                                <Setter Property="Opacity" Value="0.35"/>
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-    </Window.Resources>
+    <!-- 색상·버튼·콤보박스 스타일은 App.xaml에 있음 (도구 창과 공유) -->
 
     <!-- 배경 이미지 위에 UI -->
     <Grid>
@@ -300,6 +39,12 @@
                                Foreground="{StaticResource TextDim}" FontFamily="Consolas"
                                Margin="14,0,0,0" VerticalAlignment="Bottom" Padding="0,0,0,4"/>
                 </StackPanel>
+
+                <!-- 헤더 오른쪽: 도구 창 열기 -->
+                <Button x:Name="ToolsBtn" Grid.Row="0" Content="TOOLS ⚙" Width="92"
+                        HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,2,0,0"
+                        Style="{StaticResource NeonBtn}" Click="Tools_Click"
+                        ToolTip="진법 변환 · IP · 타임스탬프 · 파일↔Base64"/>
 
                 <!-- ── 컨트롤 바 ── -->
                 <Grid Grid.Row="1" Margin="0,0,0,16">
@@ -337,6 +82,14 @@
                                          TextChanged="Input_Changed"/>
                             </Border>
                         </StackPanel>
+                        <!-- hex 인코딩 출력 형식 (hex + ENCODE일 때만 표시) -->
+                        <StackPanel x:Name="HexPanel" Orientation="Horizontal"
+                                    Visibility="Collapsed" Margin="12,0,0,0">
+                            <TextBlock Text="형식" Foreground="{StaticResource TextDim}"
+                                       VerticalAlignment="Center" Margin="0,0,6,0"/>
+                            <ComboBox x:Name="HexFormatBox" Width="120"
+                                      SelectionChanged="HexFormat_Changed"/>
+                        </StackPanel>
                     </StackPanel>
                 </Grid>
 
@@ -354,14 +107,89 @@
                         <TextBox x:Name="InputBox" Background="Transparent"
                                  Foreground="{StaticResource TextMain}"
                                  CaretBrush="{StaticResource Cyan}" BorderThickness="0"
-                                 FontSize="15" Padding="14" FontFamily="Consolas"
+                                 FontSize="15" Padding="14,14,14,28" FontFamily="Consolas"
                                  TextWrapping="Wrap" AcceptsReturn="True"
                                  VerticalContentAlignment="Top"
-                                 VerticalScrollBarVisibility="Auto" TextChanged="Input_Changed"/>
-                        <TextBlock x:Name="InputHint" Text="여기에 텍스트를 입력하세요..."
+                                 VerticalScrollBarVisibility="Auto" TextChanged="Input_Changed"
+                                 IsInactiveSelectionHighlightEnabled="True"
+                                 SelectionBrush="#7A5CFF"
+                                 SelectionChanged="Input_SelectionChanged"
+                                 GotKeyboardFocus="Box_GotFocus"
+                                 AllowDrop="True"
+                                 PreviewDragEnter="Input_PreviewDragOver"
+                                 PreviewDragOver="Input_PreviewDragOver"
+                                 PreviewDrop="Input_PreviewDrop"/>
+                        <TextBlock x:Name="InputHint" Text="여기에 텍스트를 입력하세요... (파일을 끌어다 놓으면 해시 계산)"
                                    Foreground="#4A4670" FontSize="15" FontFamily="Consolas"
                                    Margin="16,14,0,0" IsHitTestVisible="False"
                                    VerticalAlignment="Top"/>
+                        <!-- 오른쪽 아래: 커서 위치 · 줄 · 글자 · 바이트 -->
+                        <TextBlock x:Name="InputStats" HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                                   Margin="0,0,16,8" FontSize="10" FontFamily="Consolas"
+                                   Foreground="#5A5680" IsHitTestVisible="False"/>
+                    </Grid>
+                </Border>
+
+                <!-- ── 찾기 / 바꾸기 막대 (Ctrl+F / Ctrl+H, 입력 패널 오른쪽 위에 겹쳐 표시) ── -->
+                <Border x:Name="FindBar" Grid.Row="2" Visibility="Collapsed"
+                        HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,8,10,0"
+                        Background="#141127" BorderBrush="#3A3560" BorderThickness="1"
+                        CornerRadius="8" Padding="8,6">
+                    <Border.Effect>
+                        <DropShadowEffect Color="#000000" BlurRadius="14" ShadowDepth="3" Opacity="0.6"/>
+                    </Border.Effect>
+                    <Border.Resources>
+                        <Style x:Key="FindText" TargetType="TextBox">
+                            <Setter Property="Width" Value="170"/>
+                            <Setter Property="Height" Value="26"/>
+                            <Setter Property="Background" Value="#0E0B1C"/>
+                            <Setter Property="Foreground" Value="#E9E7FA"/>
+                            <Setter Property="CaretBrush" Value="#22E9E9"/>
+                            <Setter Property="BorderBrush" Value="#2A2540"/>
+                            <Setter Property="BorderThickness" Value="1"/>
+                            <Setter Property="FontFamily" Value="Consolas"/>
+                            <Setter Property="FontSize" Value="12"/>
+                            <Setter Property="Padding" Value="5,0"/>
+                            <Setter Property="VerticalContentAlignment" Value="Center"/>
+                        </Style>
+                        <Style x:Key="FindBtn" TargetType="Button" BasedOn="{StaticResource NeonBtn}">
+                            <Setter Property="Height" Value="26"/>
+                            <Setter Property="MinWidth" Value="28"/>
+                            <Setter Property="FontSize" Value="11"/>
+                            <Setter Property="Margin" Value="4,0,0,0"/>
+                            <Setter Property="Padding" Value="6,0"/>
+                        </Style>
+                    </Border.Resources>
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBox x:Name="FindBox" Style="{StaticResource FindText}"
+                                     TextChanged="FindBox_Changed" PreviewKeyDown="FindBox_KeyDown"
+                                     ToolTip="찾을 내용 (Enter 다음, Shift+Enter 이전, Esc 닫기)"/>
+                            <TextBlock x:Name="MatchText" Text="0/0" Width="54" Margin="6,0,0,0"
+                                       VerticalAlignment="Center" TextAlignment="Center"
+                                       FontFamily="Consolas" FontSize="11" Foreground="#8A86B8"/>
+                            <Button x:Name="CaseBtn" Content="Aa" Style="{StaticResource FindBtn}"
+                                    Click="Case_Click" Opacity="0.45" ToolTip="대소문자 구분"/>
+                            <Button Content="▲" Style="{StaticResource FindBtn}" Click="FindPrev_Click"
+                                    ToolTip="이전 (Shift+Enter)"/>
+                            <Button Content="▼" Style="{StaticResource FindBtn}" Click="FindNext_Click"
+                                    ToolTip="다음 (Enter)"/>
+                            <Button Content="✕" Style="{StaticResource FindBtn}" Click="FindClose_Click"
+                                    ToolTip="닫기 (Esc)"/>
+                        </StackPanel>
+                        <StackPanel x:Name="ReplaceRow" Grid.Row="1" Orientation="Horizontal" Margin="0,6,0,0">
+                            <TextBox x:Name="ReplaceBox" Style="{StaticResource FindText}"
+                                     PreviewKeyDown="ReplaceBox_KeyDown"
+                                     ToolTip="바꿀 내용 (Enter 하나 바꾸기)"/>
+                            <Button x:Name="ReplaceBtn" Content="바꾸기" Width="54" Style="{StaticResource FindBtn}"
+                                    Margin="10,0,0,0" Click="Replace_Click"/>
+                            <Button x:Name="ReplaceAllBtn" Content="모두" Width="44" Style="{StaticResource FindBtn}"
+                                    Click="ReplaceAll_Click" ToolTip="모두 바꾸기"/>
+                        </StackPanel>
                     </Grid>
                 </Border>
 
@@ -429,16 +257,35 @@
                                 Margin="1,0" Background="#22FFFFFF"/>
                         <TextBox x:Name="OutputBox" IsReadOnly="True" Background="Transparent"
                                  Foreground="{StaticResource Cyan}" BorderThickness="0"
-                                 FontSize="15" Padding="14" FontFamily="Consolas"
+                                 FontSize="15" Padding="14,14,14,28" FontFamily="Consolas"
                                  TextWrapping="Wrap" VerticalContentAlignment="Top"
-                                 VerticalScrollBarVisibility="Auto"/>
+                                 VerticalScrollBarVisibility="Auto"
+                                 IsInactiveSelectionHighlightEnabled="True"
+                                 SelectionBrush="#7A5CFF"
+                                 TextChanged="Output_Changed"
+                                 GotKeyboardFocus="Box_GotFocus"/>
+                        <TextBlock x:Name="OutputStats" HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                                   Margin="0,0,16,8" FontSize="10" FontFamily="Consolas"
+                                   Foreground="#5A5680" IsHitTestVisible="False"/>
                     </Grid>
                 </Border>
 
-                <!-- ── 상태바 ── -->
-                <TextBlock x:Name="StatusText" Grid.Row="5" Margin="4,12,0,0"
-                           FontSize="12" FontFamily="Consolas"
-                           Foreground="{StaticResource TextDim}" Text="ready"/>
+                <!-- ── 상태바 + 문자셋 토글 ── -->
+                <Grid Grid.Row="5" Margin="0,12,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock x:Name="StatusText" Grid.Column="0" Margin="4,0,12,0"
+                               FontSize="12" FontFamily="Consolas"
+                               VerticalAlignment="Center" TextTrimming="CharacterEllipsis"
+                               Foreground="{StaticResource TextDim}" Text="ready"/>
+                    <!-- 클릭할 때마다 UTF-8 ↔ EUC-KR (바이트 기반 방식에만 적용) -->
+                    <Button x:Name="CharsetBtn" Grid.Column="1" Content="UTF-8"
+                            Width="84" Height="26" FontSize="11" FontFamily="Consolas"
+                            Style="{StaticResource NeonBtn}" Click="Charset_Click"
+                            ToolTip="문자셋: 클릭해서 UTF-8 ↔ EUC-KR 전환&#x0a;(base64·hex·url·binary·ascii·해시·auto에 적용)"/>
+                </Grid>
             </Grid>
         </Border>
     </Grid>

@@ -1,0 +1,241 @@
+<Window x:Class="CodecWpf.ToolsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="CODEC · TOOLS" Height="600" Width="660"
+        MinHeight="500" MinWidth="560"
+        WindowStartupLocation="CenterOwner"
+        Icon="pack://application:,,,/codec.ico"
+        Background="#08070F" FontFamily="Segoe UI">
+
+    <!-- 공용 색상/버튼/토글 스타일은 App.xaml. 여기엔 도구 창 전용 스타일만. -->
+    <Window.Resources>
+        <Style x:Key="ToolPanel" TargetType="Border">
+            <Setter Property="CornerRadius" Value="10"/>
+            <Setter Property="Background" Value="{StaticResource PanelFill}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource PanelStroke}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+        </Style>
+
+        <Style x:Key="ToolText" TargetType="TextBox">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="{StaticResource TextMain}"/>
+            <Setter Property="CaretBrush" Value="{StaticResource Cyan}"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="FontFamily" Value="Consolas"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="Padding" Value="10,8"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+        </Style>
+
+        <!-- 결과 표시용 (여러 줄, 읽기 전용, 시안색) -->
+        <Style x:Key="ToolOutput" TargetType="TextBox" BasedOn="{StaticResource ToolText}">
+            <Setter Property="Foreground" Value="{StaticResource Cyan}"/>
+            <Setter Property="IsReadOnly" Value="True"/>
+            <Setter Property="TextWrapping" Value="Wrap"/>
+            <Setter Property="VerticalContentAlignment" Value="Top"/>
+            <Setter Property="VerticalScrollBarVisibility" Value="Auto"/>
+            <Setter Property="Padding" Value="14,12"/>
+        </Style>
+
+        <Style x:Key="ToolLabel" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource TextDim}"/>
+            <Setter Property="FontFamily" Value="Consolas"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+
+        <Style x:Key="ToolHint" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="#5A5680"/>
+            <Setter Property="FontFamily" Value="Consolas"/>
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="TextWrapping" Value="Wrap"/>
+        </Style>
+    </Window.Resources>
+
+    <Grid>
+        <Grid.Background>
+            <ImageBrush ImageSource="pack://application:,,,/bg.png" Stretch="UniformToFill"/>
+        </Grid.Background>
+
+        <Grid Margin="22">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <!-- ── 헤더 ── -->
+            <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,16">
+                <TextBlock Text="⚙" FontSize="22" Foreground="{StaticResource Cyan}"
+                           VerticalAlignment="Center" Effect="{StaticResource CyanGlow}"/>
+                <TextBlock Text="TOOLS" FontSize="22" FontWeight="Bold"
+                           Foreground="{StaticResource TextMain}"
+                           Margin="10,0,0,0" VerticalAlignment="Center"/>
+            </StackPanel>
+
+            <!-- ── 탭 ── -->
+            <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,16">
+                <RadioButton x:Name="TabRadix" Content="진법" Tag="radix" GroupName="tabs"
+                             Style="{StaticResource ModeToggle}" Margin="0,0,8,0"
+                             Checked="Tab_Changed" IsChecked="True"/>
+                <RadioButton x:Name="TabIp" Content="IP" Tag="ip" GroupName="tabs"
+                             Style="{StaticResource ModeToggle}" Margin="0,0,8,0"
+                             Checked="Tab_Changed"/>
+                <RadioButton x:Name="TabTime" Content="타임스탬프" Tag="time" GroupName="tabs"
+                             Style="{StaticResource ModeToggle}" Margin="0,0,8,0"
+                             Checked="Tab_Changed"/>
+                <RadioButton x:Name="TabFile" Content="파일 ↔ Base64" Tag="file" GroupName="tabs"
+                             Style="{StaticResource ModeToggle}"
+                             Checked="Tab_Changed"/>
+            </StackPanel>
+
+            <!-- ── 내용 (탭마다 하나씩, 선택된 것만 보임) ── -->
+            <Grid Grid.Row="2">
+
+                <!-- 1) 진법 변환 -->
+                <Grid x:Name="RadixPanel">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="56"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <TextBlock Grid.Row="0" Text="BIN" Style="{StaticResource ToolLabel}"/>
+                    <Border Grid.Row="0" Grid.Column="1" Style="{StaticResource ToolPanel}" Margin="0,0,0,10">
+                        <TextBox x:Name="RadixBin" Tag="2" Style="{StaticResource ToolText}"
+                                 TextWrapping="Wrap" TextChanged="Radix_Changed"/>
+                    </Border>
+
+                    <TextBlock Grid.Row="1" Text="OCT" Style="{StaticResource ToolLabel}"/>
+                    <Border Grid.Row="1" Grid.Column="1" Style="{StaticResource ToolPanel}" Margin="0,0,0,10">
+                        <TextBox x:Name="RadixOct" Tag="8" Style="{StaticResource ToolText}"
+                                 TextWrapping="Wrap" TextChanged="Radix_Changed"/>
+                    </Border>
+
+                    <TextBlock Grid.Row="2" Text="DEC" Style="{StaticResource ToolLabel}"/>
+                    <Border Grid.Row="2" Grid.Column="1" Style="{StaticResource ToolPanel}" Margin="0,0,0,10">
+                        <TextBox x:Name="RadixDec" Tag="10" Style="{StaticResource ToolText}"
+                                 TextWrapping="Wrap" TextChanged="Radix_Changed"/>
+                    </Border>
+
+                    <TextBlock Grid.Row="3" Text="HEX" Style="{StaticResource ToolLabel}"/>
+                    <Border Grid.Row="3" Grid.Column="1" Style="{StaticResource ToolPanel}" Margin="0,0,0,10">
+                        <TextBox x:Name="RadixHex" Tag="16" Style="{StaticResource ToolText}"
+                                 TextWrapping="Wrap" TextChanged="Radix_Changed"/>
+                    </Border>
+
+                    <TextBlock Grid.Row="4" Grid.Column="1" Style="{StaticResource ToolHint}" Margin="2,4,0,0"
+                               Text="아무 칸에나 입력하면 나머지가 바로 바뀝니다. 0x · 0b · 0o 접두사, 공백 · _ · 쉼표 구분자, 음수, 64비트를 넘는 큰 수도 됩니다."/>
+                </Grid>
+
+                <!-- 2) IP 변환 -->
+                <Grid x:Name="IpPanel" Visibility="Collapsed">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    <Border Grid.Row="0" Style="{StaticResource ToolPanel}">
+                        <TextBox x:Name="IpInput" Style="{StaticResource ToolText}"
+                                 TextChanged="Ip_Changed"/>
+                    </Border>
+                    <TextBlock Grid.Row="1" Style="{StaticResource ToolHint}" Margin="4,6,0,12"
+                               Text="IPv4 주소(192.168.0.1), 10진수(3232235521), 16진수(0xC0A80001) 중 아무거나 넣으면 형식을 알아서 판별합니다."/>
+                    <Border Grid.Row="2" Style="{StaticResource ToolPanel}">
+                        <TextBox x:Name="IpOutput" Style="{StaticResource ToolOutput}"/>
+                    </Border>
+                </Grid>
+
+                <!-- 3) 타임스탬프 -->
+                <Grid x:Name="TimePanel" Visibility="Collapsed">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    <Grid Grid.Row="0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <Border Style="{StaticResource ToolPanel}">
+                            <TextBox x:Name="TimeInput" Style="{StaticResource ToolText}"
+                                     TextChanged="Time_Changed"/>
+                        </Border>
+                        <Button Grid.Column="1" Content="NOW" Width="70" Height="38" Margin="10,0,0,0"
+                                Style="{StaticResource NeonBtn}" Click="Now_Click"
+                                ToolTip="현재 시각의 타임스탬프 넣기"/>
+                    </Grid>
+                    <TextBlock Grid.Row="1" Style="{StaticResource ToolHint}" Margin="4,6,0,12"
+                               Text="타임스탬프(초 · 밀리초 · 마이크로초 자동 판별) 또는 날짜(2026-10-16 03:28:00, 2026-10-15T18:28:00Z)를 넣으세요. 시간대가 없는 날짜는 이 PC의 로컬 시간으로 봅니다."/>
+                    <Border Grid.Row="2" Style="{StaticResource ToolPanel}">
+                        <TextBox x:Name="TimeOutput" Style="{StaticResource ToolOutput}"/>
+                    </Border>
+                </Grid>
+
+                <!-- 4) 파일 ↔ Base64 (패널 전체가 파일 드롭 영역) -->
+                <Grid x:Name="FilePanel" Visibility="Collapsed" AllowDrop="True"
+                      PreviewDragEnter="File_PreviewDragOver" PreviewDragOver="File_PreviewDragOver"
+                      PreviewDragLeave="File_PreviewDragLeave" PreviewDrop="File_PreviewDrop">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <Border Grid.Row="0" CornerRadius="10" BorderThickness="1" Padding="14,12"
+                            Background="#0E0B1C" Margin="0,0,0,12">
+                        <Border.BorderBrush>
+                            <SolidColorBrush x:Name="DropBorder" Color="#3A3560"/>
+                        </Border.BorderBrush>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock Text="파일을 이 창에 끌어다 놓으면 Base64로 변환"
+                                           Foreground="{StaticResource TextMain}" FontSize="13"/>
+                                <TextBlock Style="{StaticResource ToolHint}" Margin="0,3,0,0"
+                                           Text="반대로 아래 칸에 Base64(data:...;base64, 형식 포함)를 붙여넣고 '파일로 저장'을 누르면 원래 파일로 복원합니다."/>
+                            </StackPanel>
+                            <Button Grid.Column="1" Content="파일 선택" Width="92" Margin="12,0,0,0"
+                                    Style="{StaticResource NeonBtn}" Click="PickFile_Click"/>
+                        </Grid>
+                    </Border>
+
+                    <Border Grid.Row="1" Style="{StaticResource ToolPanel}">
+                        <TextBox x:Name="B64Box" Style="{StaticResource ToolText}"
+                                 AcceptsReturn="True" TextWrapping="Wrap"
+                                 VerticalContentAlignment="Top" Padding="14,12"
+                                 VerticalScrollBarVisibility="Auto" FontSize="12"/>
+                    </Border>
+
+                    <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right"
+                                Margin="0,12,0,0">
+                        <Button Content="CLEAR" Width="74" Margin="0,0,8,0"
+                                Style="{StaticResource NeonBtn}" Click="ClearB64_Click"/>
+                        <Button Content="COPY" Width="74" Margin="0,0,8,0"
+                                Style="{StaticResource NeonBtn}" Click="CopyB64_Click"/>
+                        <Button Content="파일로 저장" Width="104"
+                                Style="{StaticResource NeonBtn}" Click="SaveFile_Click"
+                                ToolTip="Base64를 디코딩해 파일로 저장 (형식은 내용을 보고 추측)"/>
+                    </StackPanel>
+                </Grid>
+            </Grid>
+
+            <!-- ── 상태바 ── -->
+            <TextBlock x:Name="StatusText" Grid.Row="3" Margin="4,12,0,0"
+                       FontSize="12" FontFamily="Consolas" TextTrimming="CharacterEllipsis"
+                       Foreground="{StaticResource TextDim}" Text="ready"/>
+        </Grid>
+    </Grid>
+</Window>
